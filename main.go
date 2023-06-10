@@ -1,17 +1,21 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	_ "image/png"
 	"log"
 	"os"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type scene struct {
 	t             int
 	idx           int
+	isPlaying     bool
 	framePerImage int
 	img           []*ebiten.Image
 	width, height int
@@ -19,15 +23,30 @@ type scene struct {
 
 func (s *scene) Update() error {
 	s.t++
-	if s.t%s.framePerImage == 0 {
-		s.idx++
+
+	switch {
+	case inpututil.IsKeyJustPressed(ebiten.KeySpace):
+		s.isPlaying = !s.isPlaying
+	case isKeyLongPressed(ebiten.KeyArrowLeft):
+		s.idx = (s.idx - 1 + len(s.img)) % len(s.img)
+	case isKeyLongPressed(ebiten.KeyArrowRight):
+		s.idx = (s.idx + 1) % len(s.img)
+	case isKeyLongPressed(ebiten.KeyArrowUp):
+		s.framePerImage = max(1, s.framePerImage-1)
+	case isKeyLongPressed(ebiten.KeyArrowDown):
+		s.framePerImage++
+	}
+
+	if s.isPlaying && s.t%s.framePerImage == 0 {
 		s.idx = (s.idx + 1) % len(s.img)
 	}
+
 	return nil
 }
 
 func (s *scene) Draw(screen *ebiten.Image) {
 	screen.DrawImage(s.img[s.idx], &ebiten.DrawImageOptions{})
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("%03d/%03d, speed 60/%2d=%.1f [img/s]", s.idx, len(s.img), s.framePerImage, 60/float64(s.framePerImage)))
 }
 
 func (s *scene) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -45,8 +64,6 @@ func max(a, b int) int {
 func main() {
 	scene := &scene{
 		framePerImage: 10,
-		width:         1,
-		height:        1,
 	}
 	for _, arg := range os.Args[1:] {
 		fp, err := os.Open(arg)
