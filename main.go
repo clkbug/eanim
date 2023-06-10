@@ -69,6 +69,7 @@ func main() {
 
 	scene := &scene{
 		framePerImage: 10,
+		isPlaying:     true,
 	}
 	for _, arg := range os.Args[1:] {
 		fp, err := os.Open(arg)
