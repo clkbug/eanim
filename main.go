@@ -62,6 +62,11 @@ func max(a, b int) int {
 }
 
 func main() {
+	if len(os.Args) == 1 {
+		println("Usage: eanim x.png [y.png ..]")
+		os.Exit(1)
+	}
+
 	scene := &scene{
 		framePerImage: 10,
 	}
