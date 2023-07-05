@@ -6,6 +6,8 @@ import (
 	_ "image/png"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
@@ -61,9 +63,41 @@ func max(a, b int) int {
 	}
 }
 
+func listImgFiles(dir string) []string {
+	var files []string
+	dirs, err := os.ReadDir(dir)
+	if err != nil {
+		panic(err)
+	}
+	for _, e := range dirs {
+		if name := e.Name(); !e.IsDir() && strings.HasSuffix(name, ".png") {
+			files = append(files, filepath.Join(dir, name))
+		}
+	}
+	return files
+}
+
 func main() {
-	if len(os.Args) == 1 {
-		println("Usage: eanim x.png [y.png ..]")
+	var files []string
+
+	switch {
+	case len(os.Args) == 1:
+		files = listImgFiles(".")
+	case len(os.Args) == 2:
+		stat, err := os.Stat(os.Args[1])
+		if err != nil || !stat.IsDir() {
+			println(err)
+			files = os.Args[1:]
+			break
+		}
+		files = listImgFiles(os.Args[1])
+	default:
+		files = os.Args[1:]
+	}
+
+	if files == nil {
+		println("not found img files")
+		println("Usage: eanim [dir or files]")
 		os.Exit(1)
 	}
 
@@ -71,7 +105,7 @@ func main() {
 		framePerImage: 10,
 		isPlaying:     true,
 	}
-	for _, arg := range os.Args[1:] {
+	for _, arg := range files {
 		fp, err := os.Open(arg)
 		if err != nil {
 			log.Fatal(err)
