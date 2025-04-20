@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	_ "image/jpeg"
 	_ "image/png"
 	"log"
 	"os"
@@ -14,12 +15,17 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+type eimage struct {
+	img      *ebiten.Image
+	filename string
+}
+
 type scene struct {
 	t             int
 	idx           int
 	isPlaying     bool
 	framePerImage int
-	img           []*ebiten.Image
+	img           []eimage
 	width, height int
 }
 
@@ -47,8 +53,8 @@ func (s *scene) Update() error {
 }
 
 func (s *scene) Draw(screen *ebiten.Image) {
-	screen.DrawImage(s.img[s.idx], &ebiten.DrawImageOptions{})
-	ebitenutil.DebugPrint(screen, fmt.Sprintf("%03d/%03d, speed 60/%2d=%.1f [img/s]", s.idx, len(s.img), s.framePerImage, 60/float64(s.framePerImage)))
+	screen.DrawImage(s.img[s.idx].img, &ebiten.DrawImageOptions{})
+	ebitenutil.DebugPrint(screen, fmt.Sprintf("%03d/%03d, speed 60/%2d=%.1f [img/s], %s", s.idx, len(s.img), s.framePerImage, 60/float64(s.framePerImage), s.img[s.idx].filename))
 }
 
 func (s *scene) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -70,7 +76,7 @@ func listImgFiles(dir string) []string {
 		panic(err)
 	}
 	for _, e := range dirs {
-		if name := e.Name(); !e.IsDir() && strings.HasSuffix(name, ".png") {
+		if name := e.Name(); !e.IsDir() && (strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".jpg")) {
 			files = append(files, filepath.Join(dir, name))
 		}
 	}
@@ -115,7 +121,10 @@ func main() {
 			log.Fatal(err)
 		}
 		eimg := ebiten.NewImageFromImage(img)
-		scene.img = append(scene.img, eimg)
+		scene.img = append(scene.img, eimage{
+			img:      eimg,
+			filename: arg,
+		})
 		scene.width = max(scene.width, eimg.Bounds().Dx())
 		scene.height = max(scene.height, eimg.Bounds().Dy())
 	}
